@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: diplom
+      POSTGRES_PASSWORD: diplom
+      POSTGRES_DB: diplom
+    ports:
+      - "5432:5432"
+    volumes:
+      - diplom_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U diplom -d diplom"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  diplom_pg_data:
