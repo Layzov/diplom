@@ -37,15 +37,15 @@ func (a *Attachment) BeforeCreate(_ *gorm.DB) error {
 	return assignUUID(&a.ID)
 }
 
-func (c *Card) BeforeCreate(_ *gorm.DB) error {
-	return assignUUID(&c.ID)
-}
-
-func (s *StudySession) BeforeCreate(_ *gorm.DB) error {
+func (s *Session) BeforeCreate(_ *gorm.DB) error {
 	return assignUUID(&s.ID)
 }
 
-func (a *AttemptStat) BeforeCreate(_ *gorm.DB) error {
+func (t *TaskAttempt) BeforeCreate(_ *gorm.DB) error {
+	return assignUUID(&t.ID)
+}
+
+func (a *AttemptStats) BeforeCreate(_ *gorm.DB) error {
 	return assignUUID(&a.ID)
 }
 

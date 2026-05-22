@@ -11,6 +11,7 @@ import (
 	"diplom/internal/config"
 	"diplom/internal/db"
 	"diplom/internal/handler"
+	"diplom/internal/service"
 	slogpretty "diplom/pkg/handlers/slogPretty"
 	"diplom/pkg/middleware/mwLogger"
 	"diplom/pkg/sl"
@@ -71,6 +72,10 @@ func main() {
 	r.Use(chimw.URLFormat)
 
 	r.Get("/health", handler.Health())
+
+	services := service.New(database)
+	handler.RegisterAPI(r, services)
+	log.Info("api routes registered", slog.String("prefix", "/api/v1"))
 
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Address,

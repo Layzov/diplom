@@ -6,24 +6,26 @@ import (
 	"github.com/google/uuid"
 )
 
-// TaskKind describes how content is practiced (free-form string for extensibility).
+type TaskType string
+
 const (
-	TaskKindTheory   = "theory"
-	TaskKindExercise = "exercise"
-	TaskKindCard     = "card"
+	TaskTypeFlashcard      TaskType = "flashcard"
+	TaskTypeTest           TaskType = "test"
+	TaskTypeTheory         TaskType = "short_answer"
+	TaskTypeFillInTheBlank TaskType = "fill_in_the_blank"
+	TaskTypeMatching       TaskType = "matching"
+	TaskTypeManualReview   TaskType = "manual_review"
 )
 
-// Task is learnable content inside a topic.
 type Task struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
 	TopicID   uuid.UUID `gorm:"type:uuid;not null;index"`
 	Topic     Topic     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Title     string    `gorm:"size:500;not null"`
-	Prompt    *string   `gorm:"type:text"`
-	TaskKind  string    `gorm:"size:32;not null;default:theory"`
+	Content   string    `gorm:"type:text;not null"`
+	Type      TaskType  `gorm:"size:32;not null;default:flashcard"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
 	Attachments []Attachment `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Cards       []Card       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

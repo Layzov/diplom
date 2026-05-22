@@ -16,9 +16,9 @@ func Migrate(gdb *gorm.DB) error {
 		&models.Topic{},
 		&models.Task{},
 		&models.Attachment{},
-		&models.Card{},
-		&models.StudySession{},
-		&models.AttemptStat{},
+		&models.Session{},
+		&models.TaskAttempt{},
+		&models.AttemptStats{},
 		&models.Repetition{},
 	); err != nil {
 		return fmt.Errorf("auto migrate: %w", err)
@@ -31,20 +31,21 @@ func Migrate(gdb *gorm.DB) error {
 	return nil
 }
 
-// calendar is a read-only projection over repetitions for date-based queries (no duplicated rows).
+// calendar lists upcoming repetitions only (status = planned).
 const createCalendarViewSQL = `
 CREATE OR REPLACE VIEW calendar AS
 SELECT
 	r.id,
 	r.user_id,
+	r.session_id,
+	r.task_attempt_id,
 	r.task_id,
-	r.card_id,
-	r.next_due_at AS due_at,
-	(r.next_due_at AT TIME ZONE 'UTC')::date AS calendar_date,
+	r.topic_id,
+	r.repeat_at AS due_at,
+	(r.repeat_at AT TIME ZONE 'UTC')::date AS calendar_date,
 	r.status,
-	r.interval_days,
-	r.ease_factor,
-	r.review_count,
-	r.last_review_at
-FROM repetitions r;
+	r.created_at,
+	r.updated_at
+FROM repetitions r
+WHERE r.status = 'planned';
 `
