@@ -21,16 +21,16 @@ func NewTopicService(db *gorm.DB, subjects *repository.SubjectRepository, topics
 	return &TopicService{db: db, subjects: subjects, topics: topics}
 }
 
-func (s *TopicService) Create(subjectID uuid.UUID, req dto.CreateTopicRequest) (*dto.TopicResponse, error) {
+func (s *TopicService) Create(subjectID, authUserID uuid.UUID, req dto.CreateTopicRequest) (*dto.TopicResponse, error) {
 	if err := validateNonEmpty(req.Title, "title"); err != nil {
+		return nil, err
+	}
+	if err := s.subjectOwned(subjectID, authUserID); err != nil {
 		return nil, err
 	}
 
 	var topic models.Topic
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		if _, err := s.subjects.GetByID(subjectID); err != nil {
-			return err
-		}
 		topic = models.Topic{
 			SubjectID: subjectID,
 			Title:     strings.TrimSpace(req.Title),
@@ -47,8 +47,8 @@ func (s *TopicService) Create(subjectID uuid.UUID, req dto.CreateTopicRequest) (
 	return &resp, nil
 }
 
-func (s *TopicService) ListBySubject(subjectID uuid.UUID) (dto.TopicListResponse, error) {
-	if _, err := s.subjects.GetByID(subjectID); err != nil {
+func (s *TopicService) ListBySubject(subjectID, authUserID uuid.UUID) (dto.TopicListResponse, error) {
+	if err := s.subjectOwned(subjectID, authUserID); err != nil {
 		return dto.TopicListResponse{}, err
 	}
 	items, err := s.topics.ListBySubjectID(subjectID)
@@ -62,8 +62,8 @@ func (s *TopicService) ListBySubject(subjectID uuid.UUID) (dto.TopicListResponse
 	return dto.TopicListResponse{Items: out}, nil
 }
 
-func (s *TopicService) Get(id uuid.UUID) (*dto.TopicResponse, error) {
-	topic, err := s.topics.GetByID(id)
+func (s *TopicService) Get(id, authUserID uuid.UUID) (*dto.TopicResponse, error) {
+	topic, err := s.topicOwned(id, authUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +71,8 @@ func (s *TopicService) Get(id uuid.UUID) (*dto.TopicResponse, error) {
 	return &resp, nil
 }
 
-func (s *TopicService) Update(id uuid.UUID, req dto.UpdateTopicRequest) (*dto.TopicResponse, error) {
-	topic, err := s.topics.GetByID(id)
+func (s *TopicService) Update(id, authUserID uuid.UUID, req dto.UpdateTopicRequest) (*dto.TopicResponse, error) {
+	topic, err := s.topicOwned(id, authUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +89,9 @@ func (s *TopicService) Update(id uuid.UUID, req dto.UpdateTopicRequest) (*dto.To
 	return &resp, nil
 }
 
-func (s *TopicService) Delete(id uuid.UUID) error {
+func (s *TopicService) Delete(id, authUserID uuid.UUID) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		topic, err := s.topics.GetByID(id)
+		topic, err := s.topicOwned(id, authUserID)
 		if err != nil {
 			return err
 		}
@@ -100,4 +100,23 @@ func (s *TopicService) Delete(id uuid.UUID) error {
 		}
 		return s.subjects.AdjustTopicCount(tx, topic.SubjectID, -1)
 	})
+}
+
+func (s *TopicService) subjectOwned(subjectID, authUserID uuid.UUID) error {
+	subject, err := s.subjects.GetByID(subjectID)
+	if err != nil {
+		return err
+	}
+	return ensureOwner(subject.UserID, authUserID)
+}
+
+func (s *TopicService) topicOwned(topicID, authUserID uuid.UUID) (*models.Topic, error) {
+	topic, err := s.topics.GetByID(topicID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.subjectOwned(topic.SubjectID, authUserID); err != nil {
+		return nil, err
+	}
+	return topic, nil
 }

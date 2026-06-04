@@ -1,10 +1,12 @@
 package response
 
 const (
-	CodeBadRequest   = "BAD_REQUEST"
-	CodeNotFound     = "NOT_FOUND"
-	CodeConflict     = "CONFLICT"
-	CodeInternal     = "INTERNAL_ERROR"
+	CodeBadRequest    = "BAD_REQUEST"
+	CodeUnauthorized  = "UNAUTHORIZED"
+	CodeForbidden     = "FORBIDDEN"
+	CodeNotFound      = "NOT_FOUND"
+	CodeConflict      = "CONFLICT"
+	CodeInternal      = "INTERNAL_ERROR"
 )
 
 type Response struct {

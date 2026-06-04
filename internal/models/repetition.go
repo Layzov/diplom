@@ -19,10 +19,10 @@ type Repetition struct {
 	SessionID     uuid.UUID        `gorm:"type:uuid;not null;index"`
 	TaskAttemptID uuid.UUID        `gorm:"type:uuid;not null;uniqueIndex"`
 	TaskID        uuid.UUID        `gorm:"type:uuid;not null;index"`
-	UserID        uuid.UUID        `gorm:"type:uuid;not null;index:idx_repetitions_user_repeat_at,priority:1"`
-	TopicID       uuid.UUID        `gorm:"type:uuid;not null;index"`
-	RepeatAt      time.Time        `gorm:"not null;index:idx_repetitions_user_repeat_at,priority:2"`
-	Status        RepetitionStatus `gorm:"type:text;not null;default:planned"`
+	UserID        uuid.UUID        `gorm:"type:uuid;not null;index:idx_repetitions_user_repeat_at,priority:1;index:idx_repetitions_user_status_due,priority:1;index:idx_repetitions_user_topic,priority:1"`
+	TopicID       uuid.UUID        `gorm:"type:uuid;not null;index:idx_repetitions_user_topic,priority:2"`
+	RepeatAt      time.Time        `gorm:"not null;index:idx_repetitions_user_repeat_at,priority:2;index:idx_repetitions_user_status_due,priority:3"`
+	Status        RepetitionStatus `gorm:"type:text;not null;default:planned;index:idx_repetitions_user_status_due,priority:2"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 

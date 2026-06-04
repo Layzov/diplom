@@ -26,6 +26,15 @@ func (r *UserRepository) List() ([]models.User, error) {
 	return users, mapError(err)
 }
 
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	var user models.User
+	err := r.db.First(&user, "email = ?", email).Error
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) GetByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := r.db.First(&user, "id = ?", id).Error

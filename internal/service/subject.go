@@ -64,18 +64,24 @@ func (s *SubjectService) ListByUser(userID uuid.UUID) (dto.SubjectListResponse, 
 	return dto.SubjectListResponse{Items: out}, nil
 }
 
-func (s *SubjectService) Get(id uuid.UUID) (*dto.SubjectResponse, error) {
+func (s *SubjectService) Get(id, authUserID uuid.UUID) (*dto.SubjectResponse, error) {
 	subject, err := s.subjects.GetByID(id)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureOwner(subject.UserID, authUserID); err != nil {
 		return nil, err
 	}
 	resp := dto.SubjectFromModel(subject)
 	return &resp, nil
 }
 
-func (s *SubjectService) Update(id uuid.UUID, req dto.UpdateSubjectRequest) (*dto.SubjectResponse, error) {
+func (s *SubjectService) Update(id, authUserID uuid.UUID, req dto.UpdateSubjectRequest) (*dto.SubjectResponse, error) {
 	subject, err := s.subjects.GetByID(id)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureOwner(subject.UserID, authUserID); err != nil {
 		return nil, err
 	}
 	if req.Title != nil {
@@ -94,6 +100,13 @@ func (s *SubjectService) Update(id uuid.UUID, req dto.UpdateSubjectRequest) (*dt
 	return &resp, nil
 }
 
-func (s *SubjectService) Delete(id uuid.UUID) error {
+func (s *SubjectService) Delete(id, authUserID uuid.UUID) error {
+	subject, err := s.subjects.GetByID(id)
+	if err != nil {
+		return err
+	}
+	if err := ensureOwner(subject.UserID, authUserID); err != nil {
+		return err
+	}
 	return s.subjects.Delete(id)
 }

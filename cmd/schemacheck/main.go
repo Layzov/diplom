@@ -109,4 +109,39 @@ SELECT EXISTS (
   WHERE table_schema = 'public' AND table_name = 'calendar'
 )`).Scan(&viewOK)
 	fmt.Printf("  view calendar exists = %v\n", viewOK)
+
+	type idx struct {
+		Table string
+		Name  string
+	}
+	var indexes []idx
+	err = gdb.Raw(`
+SELECT tablename, indexname
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename IN (
+    'subjects','topics','tasks','sessions',
+    'task_attempts','repetitions','attempt_stats','users'
+  )
+ORDER BY tablename, indexname`).Scan(&indexes).Error
+	if err != nil {
+		fmt.Printf("  indexes query error: %v\n", err)
+		return
+	}
+	fmt.Printf("  indexes on core tables: %d\n", len(indexes))
+	wantIdx := []string{
+		"idx_repetitions_planned_user_due",
+		"idx_sessions_user_started_at",
+		"idx_task_attempts_user_task",
+	}
+	for _, w := range wantIdx {
+		found := false
+		for _, ix := range indexes {
+			if ix.Name == w {
+				found = true
+				break
+			}
+		}
+		fmt.Printf("    %s = %v\n", w, found)
+	}
 }

@@ -21,11 +21,15 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
 	var req dto.CreateTaskRequest
 	if !httputil.DecodeJSON(w, r, &req) {
 		return
 	}
-	task, err := h.svc.Create(topicID, req)
+	task, err := h.svc.Create(topicID, userID, req)
 	if err != nil {
 		httputil.HandleError(w, r, err)
 		return
@@ -38,7 +42,11 @@ func (h *TaskHandler) ListByTopic(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	list, err := h.svc.ListByTopic(topicID)
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.svc.ListByTopic(topicID, userID)
 	if err != nil {
 		httputil.HandleError(w, r, err)
 		return
@@ -51,7 +59,11 @@ func (h *TaskHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	task, err := h.svc.Get(id)
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
+	task, err := h.svc.Get(id, userID)
 	if err != nil {
 		httputil.HandleError(w, r, err)
 		return
@@ -64,11 +76,15 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
 	var req dto.UpdateTaskRequest
 	if !httputil.DecodeJSON(w, r, &req) {
 		return
 	}
-	task, err := h.svc.Update(id, req)
+	task, err := h.svc.Update(id, userID, req)
 	if err != nil {
 		httputil.HandleError(w, r, err)
 		return
@@ -81,7 +97,11 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := h.svc.Delete(id); err != nil {
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
+	if err := h.svc.Delete(id, userID); err != nil {
 		httputil.HandleError(w, r, err)
 		return
 	}
