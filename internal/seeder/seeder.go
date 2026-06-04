@@ -124,7 +124,7 @@ func Seed(db *gorm.DB, cfg Config, log *slog.Logger) error {
 			wrongCount := 0
 			partialCount := 0
 			skippedCount := 0
-			totalMS := int64(0)
+			totalMS := 0
 
 			for _, task := range attemptedTasks {
 				attempt := generateTaskAttempt(session.ID, user.ID, task.ID)
@@ -134,31 +134,32 @@ func Seed(db *gorm.DB, cfg Config, log *slog.Logger) error {
 
 				// Update stats
 				switch attempt.Result {
-				case models.ResultCorrect:
+				case models.AnswerResultCorrect:
 					correctCount++
-				case models.ResultWrong:
+				case models.AnswerResultWrong:
 					wrongCount++
-				case models.ResultPartial:
+				case models.AnswerResultPartial:
 					partialCount++
-				case models.ResultSkipped:
+				case models.AnswerResultSkipped:
 					skippedCount++
 				}
-				totalMS += attempt.TimeMS
+				totalMS += attempt.ResponseTimeMs
 			}
 
-			stats.TotalTasks = int64(len(attemptedTasks))
-			stats.CorrectCount = int64(correctCount)
-			stats.WrongCount = int64(wrongCount)
-			stats.PartialCount = int64(partialCount)
-			stats.SkippedCount = int64(skippedCount)
-			stats.TotalTimeMS = totalMS
+			stats.TotalTasks = len(attemptedTasks)
+			stats.CorrectCount = correctCount
+			stats.WrongCount = wrongCount
+			stats.PartialCount = partialCount
+			stats.SkippedCount = skippedCount
+			stats.TotalTimeMs = totalMS
 			if len(attemptedTasks) > 0 {
-				stats.AverageTimeMS = totalMS / int64(len(attemptedTasks))
+				stats.AverageTimeMs = totalMS / len(attemptedTasks)
 			}
 			if len(attemptedTasks) > 0 {
 				stats.SuccessRate = (float64(correctCount) / float64(len(attemptedTasks))) * 100
 			}
-			stats.NextRepeatAt = time.Now()
+			nextRepeat := time.Now().AddDate(0, 0, 1)
+			stats.NextRepeatAt = &nextRepeat
 			stats.CalculatedAt = time.Now()
 
 			if err := db.Create(stats).Error; err != nil {
@@ -179,11 +180,11 @@ func Seed(db *gorm.DB, cfg Config, log *slog.Logger) error {
 				// Calculate repeat_at based on result
 				var repeatAt time.Time
 				switch ta.Result {
-				case models.ResultCorrect:
+				case models.AnswerResultCorrect:
 					repeatAt = time.Now().AddDate(0, 0, 3) // 3 days
-				case models.ResultPartial:
+				case models.AnswerResultPartial:
 					repeatAt = time.Now().AddDate(0, 0, 2) // 2 days
-				case models.ResultWrong, models.ResultSkipped:
+				case models.AnswerResultWrong, models.AnswerResultSkipped:
 					repeatAt = time.Now().AddDate(0, 0, 1) // 1 day
 				}
 
@@ -302,10 +303,10 @@ func generateTopic(subjectID uuid.UUID, index int) *models.Topic {
 }
 
 func generateTask(topicID uuid.UUID, index int) *models.Task {
-	taskTypes := []string{
-		models.TaskTypeTheory,
-		models.TaskTypePractice,
+	taskTypes := []models.TaskType{
 		models.TaskTypeFlashcard,
+		models.TaskTypeTest,
+		models.TaskTypeFillInTheBlank,
 	}
 	typeIdx := index % len(taskTypes)
 	taskType := taskTypes[typeIdx]
@@ -349,25 +350,27 @@ func generateSession(userID uuid.UUID, index int) *models.Session {
 }
 
 func generateTaskAttempt(sessionID, userID, taskID uuid.UUID) *models.TaskAttempt {
-	results := []string{
-		models.ResultCorrect,
-		models.ResultWrong,
-		models.ResultPartial,
-		models.ResultSkipped,
+	results := []models.AnswerResult{
+		models.AnswerResultCorrect,
+		models.AnswerResultWrong,
+		models.AnswerResultPartial,
+		models.AnswerResultSkipped,
 	}
 	resultIdx := rand.Intn(len(results))
 	result := results[resultIdx]
 
-	timeMS := int64(rand.Intn(60000) + 5000) // 5-65 seconds
+	responseTimeMs := rand.Intn(60000) + 5000 // 5-65 seconds
 
 	return &models.TaskAttempt{
-		ID:        uuid.New(),
-		SessionID: sessionID,
-		UserID:    userID,
-		TaskID:    taskID,
-		Result:    result,
-		TimeMS:    timeMS,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:             uuid.New(),
+		SessionID:      sessionID,
+		UserID:         userID,
+		TaskID:         taskID,
+		Result:         result,
+		ResponseTimeMs: responseTimeMs,
+		IsCorrect:      result == models.AnswerResultCorrect,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 }
+
