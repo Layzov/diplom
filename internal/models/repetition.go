@@ -7,6 +7,7 @@ import (
 )
 
 type RepetitionStatus string
+type RepetitionQuality string
 
 const (
 	RepetitionStatusPlanned RepetitionStatus = "planned"
@@ -14,15 +15,22 @@ const (
 	RepetitionStatusSkipped RepetitionStatus = "skipped"
 )
 
+const (
+	QualityMastered   RepetitionQuality = "mastered"
+	QualityLearning   RepetitionQuality = "learning"
+	QualityStruggling RepetitionQuality = "struggling"
+)
+
 type Repetition struct {
-	ID            uuid.UUID        `gorm:"type:uuid;primaryKey"`
-	SessionID     uuid.UUID        `gorm:"type:uuid;not null;index"`
-	TaskAttemptID uuid.UUID        `gorm:"type:uuid;not null;uniqueIndex"`
-	TaskID        uuid.UUID        `gorm:"type:uuid;not null;index"`
-	UserID        uuid.UUID        `gorm:"type:uuid;not null;index:idx_repetitions_user_repeat_at,priority:1;index:idx_repetitions_user_status_due,priority:1;index:idx_repetitions_user_topic,priority:1"`
-	TopicID       uuid.UUID        `gorm:"type:uuid;not null;index:idx_repetitions_user_topic,priority:2"`
-	RepeatAt      time.Time        `gorm:"not null;index:idx_repetitions_user_repeat_at,priority:2;index:idx_repetitions_user_status_due,priority:3"`
-	Status        RepetitionStatus `gorm:"type:text;not null;default:planned;index:idx_repetitions_user_status_due,priority:2"`
+	ID            uuid.UUID         `gorm:"type:uuid;primaryKey"`
+	SessionID     uuid.UUID         `gorm:"type:uuid;not null;index"`
+	TaskAttemptID uuid.UUID         `gorm:"type:uuid;not null;uniqueIndex"`
+	TaskID        uuid.UUID         `gorm:"type:uuid;not null;index"`
+	UserID        uuid.UUID         `gorm:"type:uuid;not null;index:idx_repetitions_user_repeat_at,priority:1;index:idx_repetitions_user_status_due,priority:1;index:idx_repetitions_user_topic,priority:1"`
+	TopicID       uuid.UUID         `gorm:"type:uuid;not null;index:idx_repetitions_user_topic,priority:2"`
+	RepeatAt      time.Time         `gorm:"not null;index:idx_repetitions_user_repeat_at,priority:2;index:idx_repetitions_user_status_due,priority:3"`
+	Status        RepetitionStatus  `gorm:"type:text;not null;default:planned;index:idx_repetitions_user_status_due,priority:2"`
+	Quality       RepetitionQuality `gorm:"type:text;not null;default:learning"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 

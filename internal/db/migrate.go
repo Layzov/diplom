@@ -17,6 +17,7 @@ func Migrate(gdb *gorm.DB) error {
 		&models.Task{},
 		&models.Attachment{},
 		&models.Session{},
+		&models.SessionTask{},
 		&models.TaskAttempt{},
 		&models.AttemptStats{},
 		&models.Repetition{},

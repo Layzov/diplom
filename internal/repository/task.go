@@ -30,6 +30,59 @@ func (r *TaskRepository) ListByTopicID(topicID uuid.UUID) ([]models.Task, error)
 	return items, mapError(err)
 }
 
+// ListForReview returns tasks from a topic prioritizing failed ones.
+// Priority: STRUGGLING (failed) > LEARNING (partial) > others.
+func (r *TaskRepository) ListForReview(userID, topicID uuid.UUID, limit int) ([]models.Task, error) {
+	var tasks []models.Task
+
+	// Get task IDs sorted by struggle level (failed/wrong first)
+	type TaskScore struct {
+		TaskID    uuid.UUID
+		Priority  int // 1=struggling, 2=learning, 3=other
+	}
+
+	var scores []TaskScore
+	err := r.db.
+		Model(&models.TaskAttempt{}).
+		Distinct("task_id").
+		Select(`task_id, 
+		CASE 
+			WHEN r.quality = 'struggling' THEN 1
+			WHEN r.quality = 'learning' THEN 2
+			ELSE 3
+		END as priority`).
+		Joins("JOIN repetitions r ON task_attempts.id = r.task_attempt_id").
+		Where("task_attempts.user_id = ? AND task_attempts.result IN ('wrong', 'skipped')", userID).
+		Order("priority ASC").
+		Scan(&scores).Error
+
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	if len(scores) > 0 {
+		taskIDs := make([]uuid.UUID, 0, len(scores))
+		for _, s := range scores {
+			taskIDs = append(taskIDs, s.TaskID)
+		}
+
+		// Get full task objects, limited
+		err = r.db.
+			Where("topic_id = ? AND id IN ?", topicID, taskIDs).
+			Limit(limit).
+			Find(&tasks).Error
+		return tasks, mapError(err)
+	}
+
+	// If no failed tasks, return regular tasks from topic
+	err = r.db.
+		Where("topic_id = ?", topicID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&tasks).Error
+	return tasks, mapError(err)
+}
+
 func (r *TaskRepository) GetByID(id uuid.UUID) (*models.Task, error) {
 	var t models.Task
 	err := r.db.First(&t, "id = ?", id).Error

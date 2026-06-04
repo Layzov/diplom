@@ -111,6 +111,23 @@ func (h *SessionHandler) ListAttempts(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, list)
 }
 
+func (h *SessionHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+	id, ok := httputil.URLParamUUID(w, r, "id")
+	if !ok {
+		return
+	}
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
+	tasks, err := h.svc.GetTasksForSession(id, userID)
+	if err != nil {
+		httputil.HandleError(w, r, err)
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, tasks)
+}
+
 func (h *SessionHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	id, ok := httputil.URLParamUUID(w, r, "id")
 	if !ok {

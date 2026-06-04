@@ -23,3 +23,20 @@ func ScheduleRepeatAt(result models.AnswerResult, from time.Time) time.Time {
 	}
 	return from.Add(time.Duration(days) * 24 * time.Hour)
 }
+
+// DetermineQuality maps answer result to repetition quality level.
+func DetermineQuality(result models.AnswerResult) models.RepetitionQuality {
+	switch result {
+	case models.AnswerResultCorrect:
+		return models.QualityMastered
+	case models.AnswerResultPartial:
+		return models.QualityLearning
+	case models.AnswerResultWrong:
+		return models.QualityStruggling
+	case models.AnswerResultSkipped:
+		return models.QualityStruggling
+	default:
+		return models.QualityLearning
+	}
+}
+

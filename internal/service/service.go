@@ -25,6 +25,7 @@ func New(db *gorm.DB, jwt *auth.Manager) *Services {
 	topicRepo := repository.NewTopicRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
+	sessionTaskRepo := repository.NewSessionTaskRepository(db)
 	attemptRepo := repository.NewTaskAttemptRepository(db)
 	attemptStatsRepo := repository.NewAttemptStatsRepository(db)
 	repRepo := repository.NewRepetitionRepository(db)
@@ -38,7 +39,7 @@ func New(db *gorm.DB, jwt *auth.Manager) *Services {
 		Tasks:    NewTaskService(db, subjectRepo, topicRepo, taskRepo),
 		Sessions: NewSessionService(
 			db, userRepo, subjectRepo, taskRepo,
-			sessionRepo, attemptRepo, attemptStatsRepo, repRepo,
+			sessionRepo, attemptRepo, attemptStatsRepo, repRepo, sessionTaskRepo,
 		),
 		Repetitions: NewRepetitionService(userRepo, repRepo, calRepo),
 		Statistics:  NewStatisticsService(analyticsRepo),

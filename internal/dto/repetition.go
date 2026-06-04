@@ -17,6 +17,7 @@ type RepetitionResponse struct {
 	TopicID       uuid.UUID               `json:"topic_id"`
 	RepeatAt      time.Time               `json:"repeat_at"`
 	Status        models.RepetitionStatus `json:"status"`
+	Quality       models.RepetitionQuality `json:"quality"`
 	CreatedAt     time.Time               `json:"created_at"`
 	UpdatedAt     time.Time               `json:"updated_at"`
 }
@@ -39,6 +40,7 @@ func RepetitionFromModel(r *models.Repetition) RepetitionResponse {
 		TopicID:       r.TopicID,
 		RepeatAt:      r.RepeatAt,
 		Status:        r.Status,
+		Quality:       r.Quality,
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
 	}

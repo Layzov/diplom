@@ -33,8 +33,8 @@ type CreateTaskAttemptRequest struct {
 }
 
 type SubmitAttemptResponse struct {
-	Attempt    TaskAttemptResponse `json:"attempt"`
-	Repetition RepetitionResponse  `json:"repetition"`
+	Attempt    TaskAttemptResponse  `json:"attempt"`
+	Repetition *RepetitionResponse  `json:"repetition,omitempty"`
 }
 
 type TaskAttemptListResponse struct {
