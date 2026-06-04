@@ -107,3 +107,20 @@ func (h *TopicHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *TopicHandler) GetTaskStats(w http.ResponseWriter, r *http.Request) {
+	topicID, ok := httputil.URLParamUUID(w, r, "id")
+	if !ok {
+		return
+	}
+	userID, ok := httputil.UserIDFromContext(w, r)
+	if !ok {
+		return
+	}
+	stats, err := h.svc.GetTaskStatsByTopic(topicID, userID)
+	if err != nil {
+		httputil.HandleError(w, r, err)
+		return
+	}
+	httputil.WriteJSON(w, http.StatusOK, stats)
+}

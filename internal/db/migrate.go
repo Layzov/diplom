@@ -33,6 +33,7 @@ func Migrate(gdb *gorm.DB) error {
 		{"user_learning_stats", createUserLearningStatsViewSQL},
 		{"topic_learning_stats", createTopicLearningStatsViewSQL},
 		{"session_learning_stats", createSessionLearningStatsViewSQL},
+		{"task_learning_stats", createTaskLearningStatsViewSQL},
 	}
 	for _, v := range views {
 		if err := gdb.Exec(v.sql).Error; err != nil {
@@ -139,4 +140,39 @@ SELECT
 	ast.calculated_at
 FROM sessions s
 LEFT JOIN attempt_stats ast ON ast.session_id = s.id;
+`
+
+const createTaskLearningStatsViewSQL = `
+CREATE OR REPLACE VIEW task_learning_stats AS
+SELECT
+	tk.id AS task_id,
+	tk.title AS task_title,
+	tk.topic_id,
+	t.title AS topic_title,
+	t.subject_id,
+	sub.title AS subject_title,
+	sub.user_id,
+	COUNT(ta.id) AS attempt_count,
+	COUNT(DISTINCT ta.user_id) AS unique_users,
+	COUNT(ta.id) FILTER (WHERE ta.result = 'correct') AS correct_count,
+	COUNT(ta.id) FILTER (WHERE ta.result = 'wrong') AS wrong_count,
+	COUNT(ta.id) FILTER (WHERE ta.result = 'partial') AS partial_count,
+	COUNT(ta.id) FILTER (WHERE ta.result = 'skipped') AS skipped_count,
+	CASE
+		WHEN COUNT(ta.id) > 0 THEN
+			ROUND(COUNT(ta.id) FILTER (WHERE ta.result = 'correct')::numeric / COUNT(ta.id) * 100, 2)
+		ELSE 0
+	END AS success_rate,
+	COALESCE(AVG(ta.response_time_ms), 0)::int AS avg_response_time_ms,
+	COUNT(rep.id) FILTER (WHERE rep.status = 'planned') AS planned_repetitions,
+	COUNT(rep.id) FILTER (WHERE rep.quality = 'struggling') AS struggling_count,
+	COUNT(rep.id) FILTER (WHERE rep.quality = 'learning') AS learning_count,
+	COUNT(rep.id) FILTER (WHERE rep.quality = 'mastered') AS mastered_count,
+	MAX(ta.created_at) AS last_attempted_at
+FROM tasks tk
+JOIN topics t ON t.id = tk.topic_id
+JOIN subjects sub ON sub.id = t.subject_id
+LEFT JOIN task_attempts ta ON ta.task_id = tk.id
+LEFT JOIN repetitions rep ON rep.task_id = tk.id
+GROUP BY tk.id, tk.title, tk.topic_id, t.title, t.subject_id, sub.title, sub.user_id;
 `

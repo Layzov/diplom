@@ -102,6 +102,46 @@ func (s *TopicService) Delete(id, authUserID uuid.UUID) error {
 	})
 }
 
+// GetTaskStatsByTopic returns detailed learning stats for each task in a topic.
+func (s *TopicService) GetTaskStatsByTopic(topicID, userID uuid.UUID) (interface{}, error) {
+	if _, err := s.topicOwned(topicID, userID); err != nil {
+		return nil, err
+	}
+
+	var stats []map[string]interface{}
+	err := s.db.Raw(`
+		SELECT
+			task_id,
+			task_title,
+			topic_id,
+			attempt_count,
+			unique_users,
+			correct_count,
+			wrong_count,
+			partial_count,
+			skipped_count,
+			success_rate,
+			avg_response_time_ms,
+			planned_repetitions,
+			struggling_count,
+			learning_count,
+			mastered_count,
+			last_attempted_at
+		FROM task_learning_stats
+		WHERE topic_id = ? AND user_id = ?
+		ORDER BY struggle_count DESC, attempt_count DESC
+	`, topicID, userID).Scan(&stats).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"topic_id": topicID,
+		"tasks":    stats,
+	}, nil
+}
+
 func (s *TopicService) subjectOwned(subjectID, authUserID uuid.UUID) error {
 	subject, err := s.subjects.GetByID(subjectID)
 	if err != nil {

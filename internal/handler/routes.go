@@ -68,6 +68,7 @@ func RegisterAPI(r chi.Router, svc *service.Services, jwt *auth.Manager) {
 					r.Get("/", topics.Get)
 					r.Put("/", topics.Update)
 					r.Delete("/", topics.Delete)
+					r.Get("/stats", topics.GetTaskStats)
 
 					r.Route("/tasks", func(r chi.Router) {
 						r.Post("/", tasks.Create)
