@@ -1,0 +1,1318 @@
+openapi: 3.0.0
+info:
+  title: Exam Prep Backend API
+  description: >
+    Веб-приложение для эффективной подготовки к экзаменам с использованием 
+    метода интервальных повторений.
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/Layzov/diplom
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health checks
+  - name: Authentication
+    description: User registration and authentication (JWT)
+  - name: Profile
+    description: User profile and personal statistics
+  - name: Subjects
+    description: Study subjects (Математика, Физика, etc)
+  - name: Topics
+    description: Topics within subjects
+  - name: Tasks
+    description: Tasks/flashcards for learning
+  - name: Sessions
+    description: Study sessions and attempt tracking
+  - name: Repetitions
+    description: Spaced repetition scheduling
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Check if API is running and healthy
+      operationId: getHealth
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Create a new user account and return JWT token
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: SecurePassword123
+                name:
+                  type: string
+                  example: John Doe
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login user
+      description: Authenticate user with email and password, return JWT token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/profile:
+    get:
+      tags: [Profile]
+      summary: Get user profile
+      description: Get current authenticated user's profile information
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Profile]
+      summary: Update user profile
+      description: Update current user's profile information
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: New Name
+                settings:
+                  type: object
+                  properties:
+                    timezone:
+                      type: string
+                      example: UTC
+                    language:
+                      type: string
+                      example: ru-RU
+                    theme:
+                      type: string
+                      enum: [light, dark]
+                    notifications_enabled:
+                      type: boolean
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+
+  /api/v1/me/subjects:
+    get:
+      tags: [Profile]
+      summary: List user's subjects
+      description: Get all subjects created by current user
+      operationId: listUserSubjects
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Subjects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags: [Subjects]
+      summary: Create subject
+      description: Create a new study subject for current user
+      operationId: createSubject
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  maxLength: 255
+                  example: Математика
+                description:
+                  type: string
+                  example: Подготовка к ОГЭ
+      responses:
+        '201':
+          description: Subject created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  data:
+                    $ref: '#/components/schemas/Subject'
+        '400':
+          description: Invalid request
+
+  /api/v1/subjects/{id}:
+    get:
+      tags: [Subjects]
+      summary: Get subject
+      operationId: getSubject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subject retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Subject'
+        '404':
+          description: Subject not found
+
+    put:
+      tags: [Subjects]
+      summary: Update subject
+      operationId: updateSubject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Subject updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Subject'
+
+    delete:
+      tags: [Subjects]
+      summary: Delete subject
+      operationId: deleteSubject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Subject deleted
+        '404':
+          description: Subject not found
+
+  /api/v1/subjects/{id}/topics:
+    get:
+      tags: [Topics]
+      summary: List topics by subject
+      operationId: listTopicsBySubject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Topics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Topic'
+
+    post:
+      tags: [Topics]
+      summary: Create topic
+      operationId: createTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  example: Основные понятия
+      responses:
+        '201':
+          description: Topic created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Topic'
+
+  /api/v1/topics/{id}:
+    get:
+      tags: [Topics]
+      summary: Get topic
+      operationId: getTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Topic retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Topic'
+
+    put:
+      tags: [Topics]
+      summary: Update topic
+      operationId: updateTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+      responses:
+        '200':
+          description: Topic updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Topic'
+
+    delete:
+      tags: [Topics]
+      summary: Delete topic
+      operationId: deleteTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Topic deleted
+
+  /api/v1/topics/{id}/tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks by topic
+      operationId: listTasksByTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tasks retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+
+    post:
+      tags: [Tasks]
+      summary: Create task
+      operationId: createTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, type]
+              properties:
+                title:
+                  type: string
+                  example: Задача 1
+                content:
+                  type: string
+                  example: Решите уравнение...
+                type:
+                  type: string
+                  enum: [flashcard, test, short_answer, fill_in_the_blank, matching, manual_review]
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Task'
+
+  /api/v1/tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Get task
+      operationId: getTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Task'
+
+    put:
+      tags: [Tasks]
+      summary: Update task
+      operationId: updateTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                type:
+                  type: string
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Task'
+
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      operationId: deleteTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task deleted
+
+  /api/v1/sessions:
+    post:
+      tags: [Sessions]
+      summary: Create study session
+      operationId: createSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: string
+                  format: uuid
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Session'
+
+  /api/v1/sessions/{id}:
+    get:
+      tags: [Sessions]
+      summary: Get session
+      operationId: getSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Session'
+
+  /api/v1/sessions/{id}/finish:
+    post:
+      tags: [Sessions]
+      summary: Finish session
+      description: Mark study session as complete and calculate statistics
+      operationId: finishSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session finished
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
+  /api/v1/sessions/{id}/attempts:
+    get:
+      tags: [Sessions]
+      summary: Get session attempts
+      operationId: listAttempts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Attempts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskAttempt'
+
+    post:
+      tags: [Sessions]
+      summary: Submit task attempt
+      description: Submit an answer to a task and record result
+      operationId: submitAttempt
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id, result]
+              properties:
+                task_id:
+                  type: string
+                  format: uuid
+                result:
+                  type: string
+                  enum: [correct, wrong, partial, skipped]
+                answer_text:
+                  type: string
+                selected_option:
+                  type: string
+                response_time_ms:
+                  type: integer
+                  example: 5000
+      responses:
+        '201':
+          description: Attempt recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/TaskAttempt'
+
+  /api/v1/sessions/{id}/stats:
+    get:
+      tags: [Sessions]
+      summary: Get session statistics
+      operationId: getSessionStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/AttemptStats'
+
+  /api/v1/me/stats:
+    get:
+      tags: [Profile]
+      summary: Get user learning statistics overview
+      operationId: getStatsOverview
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      total_sessions:
+                        type: integer
+                      total_attempts:
+                        type: integer
+                      overall_success_rate:
+                        type: number
+                        format: float
+
+  /api/v1/me/stats/topics:
+    get:
+      tags: [Profile]
+      summary: Get statistics by topic
+      operationId: getTopicStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Topic statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        topic_id:
+                          type: string
+                          format: uuid
+                        topic_title:
+                          type: string
+                        success_rate:
+                          type: number
+                        attempts_count:
+                          type: integer
+
+  /api/v1/me/stats/sessions:
+    get:
+      tags: [Profile]
+      summary: Get statistics by session
+      operationId: getSessionStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Session statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        session_id:
+                          type: string
+                          format: uuid
+                        started_at:
+                          type: string
+                          format: date-time
+                        duration_seconds:
+                          type: integer
+                        success_rate:
+                          type: number
+
+  /api/v1/me/stats/upcoming:
+    get:
+      tags: [Profile]
+      summary: Get upcoming repetitions
+      operationId: getUpcomingRepetitions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Upcoming repetitions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: string
+                          format: uuid
+                        repeat_at:
+                          type: string
+                          format: date-time
+                        last_attempt:
+                          type: string
+                          enum: [correct, wrong, partial, skipped]
+
+  /api/v1/repetitions/{id}:
+    patch:
+      tags: [Repetitions]
+      summary: Update repetition
+      description: Mark repetition as completed and schedule next review
+      operationId: updateRepetition
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [planned, in_progress, completed, skipped]
+      responses:
+        '200':
+          description: Repetition updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Repetition'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+            name:
+              type: string
+            access_token:
+              type: string
+              description: JWT token for authenticated requests
+            token_type:
+              type: string
+              example: Bearer
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          example: user
+        settings:
+          type: object
+          properties:
+            timezone:
+              type: string
+            language:
+              type: string
+            theme:
+              type: string
+            notifications_enabled:
+              type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Subject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        num_of_topics:
+          type: integer
+        num_of_tasks:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Topic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        num_of_tasks:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [flashcard, test, short_answer, fill_in_the_blank, matching, manual_review]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TaskAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        answer_text:
+          type: string
+          nullable: true
+        selected_option:
+          type: string
+          nullable: true
+        is_correct:
+          type: boolean
+        result:
+          type: string
+          enum: [correct, wrong, partial, skipped]
+        response_time_ms:
+          type: integer
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AttemptStats:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        total_tasks:
+          type: integer
+        correct_count:
+          type: integer
+        wrong_count:
+          type: integer
+        skipped_count:
+          type: integer
+        partial_count:
+          type: integer
+        total_time_ms:
+          type: integer
+        average_time_ms:
+          type: integer
+        success_rate:
+          type: number
+          format: float
+        next_repeat_at:
+          type: string
+          format: date-time
+          nullable: true
+        calculated_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Repetition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        task_attempt_id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        repeat_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [planned, in_progress, completed, skipped]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginatedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
