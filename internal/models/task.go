@@ -19,12 +19,12 @@ const (
 
 type Task struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
-	TopicID   uuid.UUID `gorm:"type:uuid;not null;index"`
+	TopicID   uuid.UUID `gorm:"type:uuid;not null;index:idx_tasks_topic_created_at,priority:1"`
 	Topic     Topic     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Title     string    `gorm:"size:500;not null"`
 	Content   string    `gorm:"type:text;not null"`
 	Type      TaskType  `gorm:"size:32;not null;default:flashcard"`
-	CreatedAt time.Time
+	CreatedAt time.Time `gorm:"index:idx_tasks_topic_created_at,priority:2"`
 	UpdatedAt time.Time
 
 	Attachments []Attachment `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

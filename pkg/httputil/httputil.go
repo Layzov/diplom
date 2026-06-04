@@ -54,6 +54,10 @@ func HandleError(w http.ResponseWriter, r *http.Request, err error) {
 		WriteError(w, http.StatusBadRequest, response.CodeBadRequest, ve.Message)
 	case errors.Is(err, apperror.ErrConflict):
 		WriteError(w, http.StatusConflict, response.CodeConflict, "resource already exists")
+	case errors.Is(err, apperror.ErrUnauthorized):
+		WriteError(w, http.StatusUnauthorized, response.CodeUnauthorized, "authentication required")
+	case errors.Is(err, apperror.ErrForbidden):
+		WriteError(w, http.StatusForbidden, response.CodeForbidden, "access denied")
 	default:
 		reqID := middleware.GetReqID(r.Context())
 		WriteError(w, http.StatusInternalServerError, response.CodeInternal,

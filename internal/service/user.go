@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 
 	"diplom/internal/apperror"
@@ -76,6 +77,27 @@ func (s *UserService) List() (dto.UserListResponse, error) {
 		items = append(items, dto.UserFromModel(&users[i]))
 	}
 	return dto.UserListResponse{Items: items}, nil
+}
+
+func (s *UserService) Authenticate(email, password string) (*dto.UserResponse, error) {
+	if err := validateEmail(email); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(password) == "" {
+		return nil, apperror.Validation("password is required")
+	}
+	user, err := s.repo.GetByEmail(strings.TrimSpace(email))
+	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) {
+			return nil, apperror.ErrUnauthorized
+		}
+		return nil, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return nil, apperror.ErrUnauthorized
+	}
+	resp := dto.UserFromModel(user)
+	return &resp, nil
 }
 
 func (s *UserService) Get(id uuid.UUID) (*dto.UserResponse, error) {

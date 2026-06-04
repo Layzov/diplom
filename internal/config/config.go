@@ -16,6 +16,12 @@ type Config struct {
 
 	HTTP HTTPConfig `env-prefix:"HTTP_"`
 	DB   DBConfig   `env-prefix:"POSTGRES_"`
+	JWT  JWTConfig  `env-prefix:"JWT_"`
+}
+
+type JWTConfig struct {
+	Secret    string        `env:"SECRET" env-required:"true"`
+	AccessTTL time.Duration `env:"ACCESS_TTL" env-default:"24h"`
 }
 
 type HTTPConfig struct {

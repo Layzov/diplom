@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"diplom/internal/auth"
 	"diplom/internal/config"
 	"diplom/internal/db"
 	"diplom/internal/handler"
@@ -73,8 +74,17 @@ func main() {
 
 	r.Get("/health", handler.Health())
 
-	services := service.New(database)
-	handler.RegisterAPI(r, services)
+	jwtMgr, err := auth.NewManager(auth.JWTConfig{
+		Secret:    cfg.JWT.Secret,
+		AccessTTL: cfg.JWT.AccessTTL,
+	})
+	if err != nil {
+		log.Error("jwt init failed", sl.Err(err))
+		os.Exit(1)
+	}
+
+	services := service.New(database, jwtMgr)
+	handler.RegisterAPI(r, services, jwtMgr)
 	log.Info("api routes registered", slog.String("prefix", "/api/v1"))
 
 	srv := &http.Server{
