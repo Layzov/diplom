@@ -554,9 +554,19 @@ paths:
             schema:
               type: object
               properties:
-                subject_id:
+                topic_id:
                   type: string
                   format: uuid
+                  description: Topic ID for this session
+                task_count:
+                  type: integer
+                  description: Number of tasks to include
+                  example: 10
+                mode:
+                  type: string
+                  enum: [learning, review]
+                  description: Session mode - learning (new tasks) or review (struggling tasks first)
+                  example: learning
       responses:
         '201':
           description: Session created
@@ -707,6 +717,102 @@ paths:
       responses:
         '200':
           description: Upcoming repetitions retrieved
+
+  /api/v1/sessions/{id}/tasks:
+    get:
+      tags: [Sessions]
+      summary: Get tasks for session (ADAPTIVE!)
+      description: Returns tasks for the session. In learning mode returns all tasks. In review mode prioritizes struggling tasks first.
+      operationId: getSessionTasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session ID
+      responses:
+        '200':
+          description: Session tasks retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    difficulty:
+                      type: integer
+                    type:
+                      type: string
+
+  /api/v1/topics/{id}/stats:
+    get:
+      tags: [Topics]
+      summary: Get per-task learning statistics
+      description: Returns task-level learning statistics including attempt counts, success rates, and quality levels (struggling/learning/mastered).
+      operationId: getTopicTaskStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Topic ID
+      responses:
+        '200':
+          description: Task statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: string
+                          format: uuid
+                        task_title:
+                          type: string
+                        attempt_count:
+                          type: integer
+                          description: Total attempts on this task
+                        success_rate_percent:
+                          type: number
+                          format: float
+                          description: Percentage of correct answers
+                        struggling_count:
+                          type: integer
+                          description: How many times user struggled (quality=struggling)
+                        learning_count:
+                          type: integer
+                          description: How many times user was learning (quality=learning)
+                        mastered_count:
+                          type: integer
+                          description: How many times user mastered (quality=mastered)
+                        planned_repetitions:
+                          type: integer
+                          description: How many repetitions are planned for this task
+                        last_attempted_at:
+                          type: string
+                          format: date-time
+                          description: When user last attempted this task
 
 components:
   securitySchemes:

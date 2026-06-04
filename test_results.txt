@@ -1,0 +1,30 @@
+﻿
+========================================
+Testing Adaptive Spaced Repetition System
+========================================
+
+Step 1: Registering user...
+PowerShell : Invoke-WebRequest : {"error":{"code":"BAD_REQUEST","message":"invalid JSON body"}}
+At line:2 char:64
++ ... kend-setup; PowerShell -ExecutionPolicy Bypass -File test_adaptive_le ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Invoke-WebReque...id JSON body"}}:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+At F:\diplom.worktrees\agents-web-app-exam-prep-backend-setup\test_adaptive_learning.ps1:34 char:21
++ $registerResponse = Invoke-WebRequest -Uri "$API/auth/register" `
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+Response: 
+Step 2: Logging in...
+Invoke-WebRequest : {"error":{"code":"UNAUTHORIZED","message":"authentication required"}}
+At F:\diplom.worktrees\agents-web-app-exam-prep-backend-setup\test_adaptive_learning.ps1:47 char:18
++ $loginResponse = Invoke-WebRequest -Uri "$API/auth/login" `
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+Token: 
+Failed to get token
