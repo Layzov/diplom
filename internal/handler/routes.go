@@ -20,9 +20,6 @@ func RegisterAPI(r chi.Router, svc *service.Services, jwt *auth.Manager) {
 	sessions := NewSessionHandler(svc.Sessions)
 	repetitions := NewRepetitionHandler(svc.Repetitions)
 
-	r.Get("/docs", SwaggerUI())
-	r.Get("/docs/swagger.json", SwaggerUI())
-
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authH.Register)

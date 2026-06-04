@@ -73,6 +73,11 @@ func main() {
 	r.Use(chimw.URLFormat)
 
 	r.Get("/health", handler.Health())
+	
+	// Mount Swagger docs handler at /docs path
+	// This will handle both /docs and /docs/* paths
+	r.Get("/docs", handler.DocsHandler())
+	r.Get("/docs/*", handler.DocsHandler())
 
 	jwtMgr, err := auth.NewManager(auth.JWTConfig{
 		Secret:    cfg.JWT.Secret,

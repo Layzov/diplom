@@ -5,17 +5,19 @@ import (
 	"strings"
 )
 
-// SwaggerUI returns a handler that serves Swagger UI for API documentation
-func SwaggerUI() http.HandlerFunc {
+// DocsHandler returns a handler that serves both Swagger UI and OpenAPI spec
+func DocsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/swagger.json") {
+		// Serve OpenAPI spec as JSON
+		if strings.HasSuffix(r.URL.Path, "/swagger.json") || strings.HasSuffix(r.URL.Path, ".json") {
 			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(openAPISpec))
 			return
 		}
 
-		// Serve Swagger UI HTML
+		// Serve Swagger UI HTML (default)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(swaggerHTML))
